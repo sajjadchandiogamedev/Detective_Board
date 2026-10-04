@@ -6,9 +6,9 @@
     <meta name="theme-color" content="#15120f" />
     <meta
       name="description"
-      content="A noir-inspired portfolio and interactive detective evidence board."
+      content="Sajjad Chandio's archive of 3D game art, game development, and real-time builds, presented as a classic noir evidence board."
     />
-    <title>The Case Board — Portfolio</title>
+    <title>Sajjad Chandio // Game Art &amp; Dev Archives</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -21,31 +21,30 @@
   <body>
     <div class="room-light" aria-hidden="true"></div>
     <header class="topbar">
-      <a class="brand" href="#board" aria-label="The Case Board home"
-        ><span class="brand-mark">✳</span> THE CASE BOARD
-        <span class="brand-sub">PORTFOLIO / EST. 2024</span></a
+      <a class="brand" href="#board" aria-label="Sajjad Chandio Game Art and Dev Archives home"
+        ><span class="brand-mark">✳</span> SAJJAD CHANDIO // GAME ART &amp; DEV ARCHIVES
+        <span class="brand-sub">DEPARTMENT OF GAME ARCHITECTURE &amp; REALTIME ART</span></a
       >
       <div class="top-actions">
-        <span class="case-number">CASE NO. 042-26</span>
+        <span class="case-number">CASE NO. 2026-SC</span>
         <button
           class="sound-toggle"
           id="soundToggle"
           type="button"
-          aria-pressed="false"
+          aria-pressed="true"
           title="Toggle sound effects"
         >
-          ◖)) <span> SOUND OFF</span>
+          ◖)) <span>[SFX: AMBIENT NOIR ON]</span>
         </button>
       </div>
     </header>
     <main id="board">
       <section class="intro" aria-label="Board introduction">
         <div>
-          <p class="eyebrow">DEPARTMENT OF DIGITAL INVESTIGATION</p>
-          <h1>Every project leaves <em>a trace.</em></h1>
+          <p class="eyebrow">DEPARTMENT OF GAME ARCHITECTURE &amp; REALTIME ART</p>
+          <h1>Every asset leaves a trace. <em>Every build tells a story.</em></h1>
           <p class="intro-copy">
-            A working collection of cases, skills, and clues. Drag to
-            investigate. Select any item to open its file.
+            A working collection of 3D environments, game builds, and real-time shaders. Use [WASD] or drag to investigate.
           </p>
         </div>
         <div class="board-stamp" aria-hidden="true">EVIDENCE<br />ON FILE</div>
@@ -54,190 +53,30 @@
         <div
           class="board-viewport"
           id="viewport"
-          aria-label="Interactive evidence board. Drag to pan and use the mouse wheel to zoom."
+          aria-label="Interactive game art archive. Use WASD or drag to move and the mouse wheel to zoom."
         >
           <div class="board-world" id="world">
             <svg class="threads" id="threads" aria-hidden="true"></svg>
-            <article
-              class="evidence dossier node"
-              id="about"
-              data-node="about"
-              data-kind="dossier"
-              tabindex="0"
-              role="button"
-              aria-label="Open the detective dossier"
-              style="--x: 8%; --y: 8%; --r: -2deg"
-            >
-              <span class="file-tab">PERSONNEL / 01</span>
-              <div class="dossier-head">
-                <div class="avatar" aria-hidden="true">?</div>
-                <div>
-                  <span class="micro">SUBJECT PROFILE</span>
-                  <h2>THE<br />DETECTIVE</h2>
-                  <span class="status">IDENTITY: YOUR NAME</span>
-                </div>
-              </div>
-              <p class="type-copy">
-                Curious by nature. Builder by trade. Following the clues from a
-                first sketch to a finished product.
-              </p>
-              <div class="redacted">CLASSIFIED · CLASSIFIED · CLASSIFIED</div>
-              <span class="hand-note">the one behind the board →</span>
-            </article>
-            <article
-              class="evidence polaroid node"
-              id="project-one"
-              data-node="project-one"
-              data-kind="project"
-              data-links="skill-js skill-design cert-web"
-              tabindex="0"
-              role="button"
-              aria-label="Open case file: Project One"
-              style="--x: 41%; --y: 10%; --r: 2deg"
-            >
-              <span class="pin pin-red"></span>
-              <div class="photo photo-city">
-                <span>CASE STUDY 01</span><b>AFTER<br />HOURS</b><i>✳</i>
-              </div>
-              <h2>Project One</h2>
-              <p>THE WEB / 2026</p>
-              <span class="hand-note">a curious little build</span>
-            </article>
-            <article
-              class="evidence memo node"
-              id="achievement"
-              data-node="achievement"
-              data-kind="achievement"
-              data-links="project-one"
-              tabindex="0"
-              role="button"
-              aria-label="Open achievement file"
-              style="--x: 74%; --y: 9%; --r: 3deg"
-            >
-              <span class="clip"></span
-              ><span class="micro">FIELD REPORT · 06.26</span>
-              <h2>ONE TO WATCH</h2>
-              <div class="memo-rule"></div>
-              <p>
-                “A sharp eye for the details—and the patience to follow a
-                problem through.”
-              </p>
-              <span class="byline">— THE DAILY BUGLE, maybe</span
-              ><span class="hand-note">keep going</span>
-            </article>
-            <article
-              class="evidence skill-card node"
-              id="skill-js"
-              data-node="skill-js"
-              data-kind="skill"
-              data-links="project-one project-two"
-              tabindex="0"
-              role="button"
-              aria-label="Open skill file: JavaScript"
-              style="--x: 16%; --y: 56%; --r: 2deg"
-            >
-              <span class="tape"></span><span class="micro">TOOLS / 01</span>
-              <h2>JavaScript</h2>
-              <p>Making things move, respond, and make sense.</p>
-              <div class="skill-meter">
-                <i></i><i></i><i></i><i></i><i class="empty"></i>
-              </div>
-              <span class="hand-note">the usual suspect</span>
-            </article>
-            <article
-              class="evidence polaroid node"
-              id="project-two"
-              data-node="project-two"
-              data-kind="project"
-              data-links="skill-design skill-js"
-              tabindex="0"
-              role="button"
-              aria-label="Open case file: Project Two"
-              style="--x: 42%; --y: 58%; --r: -3deg"
-            >
-              <span class="pin"></span>
-              <div class="photo photo-terminal">
-                <span>CASE STUDY 02</span><b>THE<br />ARCHIVE</b><i>⌘</i>
-              </div>
-              <h2>Project Two</h2>
-              <p>INFORMATION / 2025</p>
-              <span class="hand-note">files within files</span>
-            </article>
-            <article
-              class="evidence certificate node"
-              id="cert-web"
-              data-node="cert-web"
-              data-kind="certificate"
-              data-links="project-one"
-              tabindex="0"
-              role="button"
-              aria-label="Open certification file"
-              style="--x: 76%; --y: 54%; --r: 1deg"
-            >
-              <span class="tape"></span
-              ><span class="micro">CERTIFICATE OF COMPLETION</span>
-              <div class="cert-seal">✓</div>
-              <h2>Web Development</h2>
-              <p>FOUNDATIONS / VERIFIED</p>
-              <span class="stamp">VERIFIED</span
-              ><span class="hand-note">paper trail checks out</span>
-            </article>
-            <article
-              class="evidence skill-card note-card node"
-              id="skill-design"
-              data-node="skill-design"
-              data-kind="skill"
-              data-links="project-one project-two"
-              tabindex="0"
-              role="button"
-              aria-label="Open skill file: Design and CSS"
-              style="--x: 18%; --y: 83%; --r: -3deg"
-            >
-              <span class="tape"></span><span class="micro">TOOLS / 02</span>
-              <h2>Design & CSS</h2>
-              <p>Turning a rough lead into a clear picture.</p>
-              <div class="skill-meter"><i></i><i></i><i></i><i></i><i></i></div>
-              <span class="hand-note">follow the visual evidence</span>
-            </article>
-            <article
-              class="evidence memo quote node"
-              id="contact"
-              data-node="contact"
-              data-kind="contact"
-              data-links="about"
-              tabindex="0"
-              role="button"
-              aria-label="Open contact file"
-              style="--x: 72%; --y: 84%; --r: 2deg"
-            >
-              <span class="micro">IF YOU HAVE A LEAD…</span>
-              <h2>LET'S TALK.</h2>
-              <p>
-                Got a case worth solving together? Leave a message with the
-                desk.
-              </p>
-              <span class="contact-address">hello@example.com</span
-              ><span class="hand-note">all tips treated confidentially</span>
-            </article>
+            <div class="loading-note" id="loadingNote">LOADING GAME ARCHIVE...</div>
             <div class="coffee-ring ring-one" aria-hidden="true"></div>
             <div class="coffee-ring ring-two" aria-hidden="true"></div>
             <p class="board-scribble scribble-one" aria-hidden="true">
-              WHO BENEFITS?
+              BUILD. TEST. REFINE.
             </p>
             <p class="board-scribble scribble-two" aria-hidden="true">
-              CHECK THE DETAILS ↗
+              CHECK THE DETAILS →
             </p>
           </div>
         </div>
         <nav class="canvas-controls" aria-label="Board controls">
           <button id="zoomIn" type="button" aria-label="Zoom in">+</button
-          ><button id="zoomOut" type="button" aria-label="Zoom out">−</button
+          ><button id="zoomOut" type="button" aria-label="Zoom out">&minus;</button
           ><button id="resetView" type="button" aria-label="Reset board view">
-            ⌂
+            &#8962;
           </button>
         </nav>
         <div class="board-hint" aria-hidden="true">
-          DRAG TO INVESTIGATE <span>·</span> SCROLL TO ZOOM
+          [WASD / ARROW KEYS] MOVE CAMERA <span>|</span> [SCROLL] ZOOM <span>|</span> [CLICK] EXAMINE DOSSIER
         </div>
         <div class="minimap" id="minimap" aria-label="Board minimap">
           <div class="mini-world" id="miniWorld">
@@ -247,35 +86,35 @@
       </div>
       <footer class="footer">
         <span
-          >THE CASE BOARD <span class="footer-dot">●</span> ALL CLUES LEAD
+          >SAJJAD CHANDIO <span class="footer-dot">●</span> GAME ART &amp; DEV ARCHIVES
           SOMEWHERE</span
-        ><span>CLICK AN ITEM TO OPEN ITS FILE</span>
+        ><span>CLICK AN ITEM TO EXAMINE ITS DOSSIER</span>
       </footer>
     </main>
     <dialog class="case-dialog" id="caseDialog" aria-labelledby="modalTitle">
       <div class="case-paper">
         <div class="case-top">
-          <span>POLICE DEPARTMENT · EVIDENCE DIVISION</span
+          <span>GAME ARCHITECTURE DEPARTMENT · REALTIME ART DIVISION</span
           ><button id="closeDialog" class="close-file" type="button">
-            ✕ <span>CLOSE FILE</span>
+            × <span>CLOSE DOSSIER</span>
           </button>
         </div>
         <div class="case-content">
-          <div class="case-kicker" id="modalKicker">CASE FILE / PROJECT</div>
+          <div class="case-kicker" id="modalKicker">ARCHIVE ENTRY / PROJECT</div>
           <h2 id="modalTitle">Project title</h2>
           <div class="case-rule"></div>
           <p id="modalDescription"></p>
           <div class="modal-visual" id="modalVisual" aria-hidden="true">
             <div class="visual-placeholder">
-              <span>✳</span><b>EVIDENCE<br />PHOTO</b>
+              <span>✳</span><b>BUILD<br />CAPTURE</b>
             </div>
           </div>
           <div class="case-meta" id="modalMeta"></div>
           <div class="case-links" id="modalLinks"></div>
           <pre class="code-note" id="modalCode"><code></code></pre>
         </div>
-        <span class="file-stamp" aria-hidden="true">ON FILE</span>
-        <div class="case-footer">EVIDENCE LOG · HANDLE WITH CARE</div>
+        <span class="file-stamp" aria-hidden="true">ARCHIVED</span>
+        <div class="case-footer">PRODUCTION LOG · HANDLE WITH CARE</div>
       </div>
     </dialog>
     <div class="toast" id="toast" role="status" aria-live="polite"></div>

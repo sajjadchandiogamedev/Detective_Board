@@ -3,403 +3,329 @@
   const viewport = document.querySelector("#viewport");
   const world = document.querySelector("#world");
   const svg = document.querySelector("#threads");
-  const nodes = [...document.querySelectorAll(".node")];
   const mini = document.querySelector("#miniWorld");
   const miniWindow = document.querySelector("#miniWindow");
   const dialog = document.querySelector("#caseDialog");
   const toast = document.querySelector("#toast");
   const mobile = matchMedia("(max-width: 700px)");
-  const files = {
-    about: {
-      kind: "PERSONNEL DOSSIER",
-      title: "The Detective",
-      description:
-        "Curious by nature. Builder by trade. I follow the clues from a first sketch to a finished product, making useful things for the web along the way.\n\nThis board is a living portfolio: a few selected projects, the tools behind them, and the evidence that got me here.",
-      meta: "CLASSIFICATION: PUBLIC · STATUS: ON THE CASE",
-      code: '// Current assignment\nconst approach = ["listen", "investigate", "build", "refine"];',
-    },
-    "project-one": {
-      kind: "CASE FILE / PROJECT 01",
-      title: "Project One — After Hours",
-      description:
-        "A sample project card for your portfolio. Replace this case summary with what the project does, the problem it solves, and the part you are proudest of. Add screenshots, a demo, and a repository link when you have them.",
-      meta: "CATEGORY: WEB APPLICATION · DATE: 2026 · STATUS: CLOSED (FOR NOW)",
-      code: "// The clue that started it all\nfunction makeSomethingUseful(idea) {\n  return investigate(idea).then(build);\n}",
-    },
-    "project-two": {
-      kind: "CASE FILE / PROJECT 02",
-      title: "Project Two — The Archive",
-      description:
-        "A second sample case. Tell the story behind this project: the challenge, your approach, and the outcome. The evidence image area is ready for a real screenshot once you add one.",
-      meta: "CATEGORY: INTERFACE / INFORMATION · DATE: 2025 · STATUS: FILED",
-      code: 'const evidence = {\n  design: "clear by design",\n  details: "worth investigating"\n};',
-    },
-    "skill-js": {
-      kind: "EVIDENCE NOTE / SKILL",
-      title: "JavaScript",
-      description:
-        "I use JavaScript to add behavior to interfaces, connect data, and turn static pages into useful tools. Add your preferred frameworks, libraries, and a proficiency level here.",
-      meta: "AREA: FRONT-END DEVELOPMENT · RELATED CASES: 01, 02",
-      code: 'document.querySelectorAll(".clue")\n  .forEach(clue => clue.addEventListener("click", investigate));',
-    },
-    "skill-design": {
-      kind: "EVIDENCE NOTE / SKILL",
-      title: "Design & CSS",
-      description:
-        "From layout and typography to responsive details, I enjoy shaping interfaces that feel considered and easy to use. Customize this note with your design tools and areas of focus.",
-      meta: "AREA: VISUAL DESIGN · RELATED CASES: 01, 02",
-      code: ".details matter {\n  color: var(--character);\n  layout: intentional;\n}",
-    },
-    "cert-web": {
-      kind: "CERTIFICATION / VERIFIED",
-      title: "Web Development Foundations",
-      description:
-        "An example certificate entry. Replace with the real course or certification name, issuing organization, completion date, and credential link.",
-      meta: "ISSUER: YOUR ORGANIZATION · DATE: ADD DATE · STATUS: VERIFIED",
-      code: "",
-    },
-    achievement: {
-      kind: "FIELD REPORT / ACHIEVEMENT",
-      title: "One to Watch",
-      description:
-        "An example achievement clipping. Add an award, milestone, publication, launch, or other evidence of progress. Include dates and links so the trail can be followed.",
-      meta: "SOURCE: YOUR PUBLICATION · DATE: ADD DATE · STATUS: RECORDED",
-      code: "",
-    },
-    contact: {
-      kind: "OPEN CHANNEL / CONTACT",
-      title: "Let's talk.",
-      description:
-        "Have a case worth solving together? Replace the sample address with your preferred contact email, or add links to your professional profiles.",
-      meta: "CONTACT: hello@example.com · REPLACE WITH YOUR EMAIL",
-      code: "// New case intake\nif (goodIdea && goodPeople) {\n  openConversation();\n}",
-    },
-  };
-
-  let scale = 1,
-    panX = 0,
-    panY = 0,
-    dragging = false,
-    startX = 0,
-    startY = 0;
-  let active = null,
-    toastTimer,
-    audioContext;
   const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
+  const W = 1400, H = 1500;
+  let nodes = [], records = new Map(), links = new Map();
+  let scale = 0.82, panX = 0, panY = 220, dragging = false, startX = 0, startY = 0;
+  let active = null, toastTimer, audioContext;
 
+  const el = (tag, className, text) => {
+    const item = document.createElement(tag);
+    if (className) item.className = className;
+    if (text !== undefined) item.textContent = text;
+    return item;
+  };
+  function link(ids) { return [...(ids || [])]; }
+  function buildNodes(data) {
+    const worldCards = document.createDocumentFragment();
+    const dossier = data.dossier;
+    const entries = [
+      { id: dossier.id, kind: "dossier", title: dossier.name, data: dossier },
+      ...data.caseFiles.map(item => ({ id: item.id, kind: "project", title: item.title, data: item })),
+      ...data.incidentReports.map(item => ({ id: item.id, kind: "report", title: item.role, data: item })),
+      ...data.evidenceTags.map(item => ({ id: item.id, kind: "skill", title: item.name, data: item })),
+      ...data.certifiedDocuments.map(item => ({ id: item.id, kind: "certificate", title: item.title, data: item })),
+    ];
+    const placements = [
+      [7, 8], [36, 5], [69, 15], [13, 34], [43, 28], [76, 42],
+      [8, 59], [47, 55], [68, 77], [4, 83], [29, 72], [72, 22],
+      [27, 43], [57, 59], [22, 15], [51, 7], [79, 63], [39, 84],
+    ];
+    entries.forEach((entry, index) => {
+      const [x, y] = placements[index] || [10 + (index * 37) % 75, 8 + (index * 29) % 82];
+      const tilt = (Math.random() * 6.4 - 3.2).toFixed(1);
+      const card = el("article", `evidence node ${tilt < 0 ? "tilt-left" : "tilt-right"} ${entry.kind === "project" ? "polaroid" : entry.kind === "dossier" ? "dossier" : entry.kind === "report" ? "memo report-card" : entry.kind === "skill" ? "skill-card forensic-tag" : "certificate"}`);
+      card.dataset.node = entry.id;
+      card.dataset.kind = entry.kind;
+      card.dataset.links = "";
+      card.style.setProperty("--x", `${x}%`);
+      card.style.setProperty("--y", `${y}%`);
+      card.style.setProperty("--r", `${tilt}deg`);
+      card.style.zIndex = String(2 + (index * 7) % 4);
+      card.tabIndex = 0;
+      card.setAttribute("role", "button");
+      card.setAttribute("aria-label", `Open ${entry.kind}: ${entry.title}`);
+      card.append(makeTack());
+      records.set(entry.id, entry);
+      links.set(entry.id, new Set());
+
+      if (entry.kind === "dossier") {
+        card.append(el("span", "classified-stamp dossier-stamp", "SUBJECT DOSSIER: SAJJAD CHANDIO"));
+        const tab = el("span", "file-tab", dossier.stamp);
+        const head = el("div", "dossier-head");
+        head.append(el("div", "avatar", "SC"));
+        const heading = el("div");
+        heading.append(el("span", "micro", "SUBJECT PROFILE"), el("h2", "", dossier.name), el("span", "status", dossier.alias));
+        head.append(heading);
+        card.append(tab, head, el("p", "type-copy", dossier.summary), el("div", "redacted", `${dossier.location} · CLASSIFIED`), el("span", "hand-note", "the one behind the board →"));
+      } else if (entry.kind === "project") {
+        const item = entry.data;
+        card.append(el("span", "pin pin-red"));
+        const photo = el("div", "photo photo-city");
+        photo.append(el("span", "", item.label), el("b", "", item.classification), el("i", "", "✳"));
+        card.append(photo, el("h2", "", item.title), el("p", "", item.classification), el("span", "hand-note", "evidence on record"));
+      } else if (entry.kind === "report") {
+        const item = entry.data;
+        card.append(el("span", "clip"), el("span", "micro", item.caseNo), el("h2", "", item.role), el("div", "memo-rule"), el("p", "", `${item.company} · ${item.duration}`), el("p", "report-log", item.log), el("span", "byline", "INCIDENT FILE / VERIFIED"));
+      } else if (entry.kind === "skill") {
+        const item = entry.data;
+        card.append(el("span", "tape"), el("span", "micro", item.category), el("h2", "", item.name), el("p", "", item.details), el("div", "skill-meter"));
+      } else {
+        const item = entry.data;
+        card.append(el("span", "tape"), el("span", "micro", "CERTIFIED DOCUMENT"), el("div", "cert-seal", "✓"), el("h2", "", item.title), el("p", "", item.issuer), el("span", "stamp", item.stamp));
+      }
+      worldCards.append(card);
+    });
+    world.querySelectorAll(".node").forEach(node => node.remove());
+    world.querySelector("#loadingNote")?.remove();
+    world.append(worldCards);
+    // Read the explicit relationship lists from case files, then make every connection traversable both ways.
+    data.caseFiles.forEach(item => (item.connectedNodes || []).forEach(target => connect(item.id, target)));
+    data.incidentReports.forEach(item => (item.connectedNodes || []).forEach(target => connect(item.id, target)));
+    data.evidenceTags.forEach(item => (item.connectedNodes || []).forEach(target => connect(item.id, target)));
+    data.certifiedDocuments.forEach(item => (item.connectedNodes || []).forEach(target => connect(item.id, target)));
+    data.dossier.connectedNodes?.forEach(target => connect(data.dossier.id, target));
+    nodes = [...world.querySelectorAll(".node")];
+    nodes.forEach(node => node.dataset.links = [...(links.get(node.dataset.node) || [])].join(" "));
+    nodes.forEach(attachNodeEvents);
+    drawThreads();
+  }
+  function makeTack() {
+    const holder = el("span", "thumbtack");
+    holder.setAttribute("aria-hidden", "true");
+    holder.innerHTML = '<svg viewBox="0 0 32 42" focusable="false"><ellipse cx="16" cy="37" rx="5" ry="2" fill="#160e09" opacity=".45"/><path d="M16 17 12 37h8l-4-20Z" fill="#9b3029" stroke="#4a1714" stroke-width="1.2"/><ellipse cx="16" cy="16" rx="11" ry="9" fill="#761f1b"/><ellipse cx="15" cy="13" rx="9" ry="7" fill="#d64b3d"/><ellipse cx="12" cy="11" rx="3" ry="2" fill="#ffd4b7" opacity=".75"/></svg>';
+    return holder;
+  }
+  function connect(a, b) {
+    if (!links.has(a) || !links.has(b) || a === b) return;
+    links.get(a).add(b); links.get(b).add(a);
+  }
+  function drawThreads() {
+    svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+    svg.replaceChildren();
+    const seen = new Set();
+    nodes.forEach(node => (links.get(node.dataset.node) || []).forEach(id => {
+      const other = nodes.find(item => item.dataset.node === id);
+      if (!other) return;
+      const pair = [node.dataset.node, id].sort().join("|");
+      if (seen.has(pair)) return;
+      seen.add(pair);
+      const a = pinPoint(node), b = pinPoint(other), bend = Math.max(45, Math.min(150, Math.abs(b.x-a.x)*.2));
+      const direction = b.x >= a.x ? 1 : -1;
+      const curve = `M ${a.x} ${a.y} C ${a.x + direction*bend} ${a.y-65}, ${b.x - direction*bend} ${b.y-65}, ${b.x} ${b.y}`;
+      const shadow = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      shadow.setAttribute("d", curve); shadow.classList.add("thread-shadow"); shadow.dataset.pair = pair; svg.append(shadow);
+      const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      path.setAttribute("d", curve); path.classList.add("thread"); path.dataset.pair = pair; svg.append(path);
+    }));
+    addHub();
+    applyHighlight(active);
+  }
+  function pinPoint(node) { return { x: node.offsetLeft + node.offsetWidth/2, y: node.offsetTop - 10 }; }
+  function addHub() {
+    const hub = document.createElementNS("http://www.w3.org/2000/svg", "g");
+    hub.setAttribute("class", "string-hub"); hub.setAttribute("transform", `translate(${W*.51} ${H*.49})`);
+    hub.innerHTML = '<circle r="16" class="hub-shadow"/><circle r="10" class="hub-ring"/><circle r="5" class="hub-core"/><path d="M-5-5 5 5M5-5-5 5" class="hub-glint"/>';
+    svg.append(hub);
+  }
+  function applyHighlight(node) {
+    const related = new Set(node ? [node.dataset.node, ...(links.get(node.dataset.node) || [])] : []);
+    nodes.forEach(item => item.classList.toggle("dimmed", !!node && !related.has(item.dataset.node)));
+    svg.querySelectorAll(".thread, .thread-shadow").forEach(path => {
+      const ids = path.dataset.pair.split("|");
+      path.classList.toggle("active", !!node && ids.includes(node.dataset.node));
+      path.classList.toggle("dim", !!node && !ids.includes(node.dataset.node));
+    });
+  }
   function drawWorld() {
     if (mobile.matches) return;
     world.style.transform = `translate(calc(-50% + ${panX}px), calc(-50% + ${panY}px)) scale(${scale})`;
-    updateMini();
-    drawThreads();
+    updateMini(); drawThreads();
   }
   function constrain() {
-    const w = viewport.clientWidth,
-      h = viewport.clientHeight;
-    const contentW = 1200 * scale,
-      contentH = 760 * scale;
-    const limitX = Math.max(0, (contentW - w) / 2 + 100);
-    const limitY = Math.max(0, (contentH - h) / 2 + 100);
-    panX = Math.max(-limitX, Math.min(limitX, panX));
-    panY = Math.max(-limitY, Math.min(limitY, panY));
+    const limitX = Math.max(0, (W*scale-viewport.clientWidth)/2+100), limitY = Math.max(0, (H*scale-viewport.clientHeight)/2+100);
+    panX = Math.max(-limitX, Math.min(limitX, panX)); panY = Math.max(-limitY, Math.min(limitY, panY));
   }
   function zoomAt(next, clientX, clientY) {
     if (mobile.matches) return;
-    const rect = viewport.getBoundingClientRect();
-    const px =
-      (clientX ?? rect.left + rect.width / 2) - rect.left - rect.width / 2;
-    const py =
-      (clientY ?? rect.top + rect.height / 2) - rect.top - rect.height / 2;
-    const updated = Math.max(0.55, Math.min(1.65, next));
-    const ratio = updated / scale;
-    panX = px - ratio * (px - panX);
-    panY = py - ratio * (py - panY);
-    scale = updated;
-    constrain();
-    drawWorld();
-  }
-  function drawThreads() {
-    const width = 1200,
-      height = 760;
-    svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
-    svg.replaceChildren();
-    const seen = new Set();
-    nodes.forEach((node) => {
-      (node.dataset.links || "")
-        .split(/\s+/)
-        .filter(Boolean)
-        .forEach((id) => {
-          const other = document.querySelector(`[data-node="${id}"]`);
-          if (!other) return;
-          const key = [node.dataset.node, id].sort().join("|");
-          if (seen.has(key)) return;
-          seen.add(key);
-          const a = center(node),
-            b = center(other);
-          const bend = Math.max(30, Math.min(100, Math.abs(b.x - a.x) * 0.15));
-          const path = document.createElementNS(
-            "http://www.w3.org/2000/svg",
-            "path",
-          );
-          path.setAttribute(
-            "d",
-            `M ${a.x} ${a.y} C ${a.x + (b.x > a.x ? bend : -bend)} ${a.y + 30}, ${b.x - (b.x > a.x ? bend : -bend)} ${b.y - 30}, ${b.x} ${b.y}`,
-          );
-          path.classList.add("thread");
-          path.dataset.pair = key;
-          svg.append(path);
-        });
-    });
-    applyHighlight(active);
-  }
-  function center(node) {
-    const x = node.offsetLeft + node.offsetWidth / 2;
-    const y = node.offsetTop + node.offsetHeight / 2;
-    return { x, y };
-  }
-  function applyHighlight(node) {
-    const related = new Set(
-      node
-        ? [node.dataset.node, ...(node.dataset.links || "").split(/\s+/)]
-        : [],
-    );
-    nodes.forEach((item) =>
-      item.classList.toggle(
-        "dimmed",
-        !!node && !related.has(item.dataset.node),
-      ),
-    );
-    svg.querySelectorAll(".thread").forEach((path) => {
-      if (!node) {
-        path.classList.remove("active", "dim");
-        return;
-      }
-      const ids = path.dataset.pair.split("|");
-      const connected = ids.includes(node.dataset.node);
-      path.classList.toggle("active", connected);
-      path.classList.toggle("dim", !connected);
-    });
+    const rect = viewport.getBoundingClientRect(), px=(clientX ?? rect.left+rect.width/2)-rect.left-rect.width/2, py=(clientY ?? rect.top+rect.height/2)-rect.top-rect.height/2;
+    const updated=Math.max(.45,Math.min(1.35,next)), ratio=updated/scale;
+    panX=px-ratio*(px-panX); panY=py-ratio*(py-panY); scale=updated; constrain(); drawWorld();
   }
   function updateMini() {
-    const vw = viewport.clientWidth,
-      vh = viewport.clientHeight;
-    miniWindow.style.width = `${vw / scale}px`;
-    miniWindow.style.height = `${vh / scale}px`;
-    miniWindow.style.left = `${600 - (vw / 2 - panX) / scale}px`;
-    miniWindow.style.top = `${380 - (vh / 2 - panY) / scale}px`;
+    const vw=viewport.clientWidth,vh=viewport.clientHeight;
+    miniWindow.style.width=`${vw/scale}px`; miniWindow.style.height=`${vh/scale}px`;
+    miniWindow.style.left=`${W/2-(vw/2-panX)/scale}px`; miniWindow.style.top=`${H/2-(vh/2-panY)/scale}px`;
   }
-  function setToast(message) {
-    toast.textContent = message;
-    toast.classList.add("show");
-    clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => toast.classList.remove("show"), 2300);
+  function soundEnabled() { return localStorage.getItem("caseboard-sound") !== "off"; }
+  function getAudioContext() {
+    audioContext ||= new (window.AudioContext || window.webkitAudioContext)();
+    if (audioContext.state === "suspended") audioContext.resume();
+    return audioContext;
+  }
+  let ambientMaster = null;
+  function startAmbient() {
+    if (!soundEnabled()) return;
+    try {
+      const ctx = getAudioContext();
+      if (ambientMaster) {
+        ambientMaster.gain.cancelScheduledValues(ctx.currentTime);
+        ambientMaster.gain.setTargetAtTime(.38, ctx.currentTime, .35);
+        return;
+      }
+      const now = ctx.currentTime;
+      ambientMaster = ctx.createGain();
+      ambientMaster.gain.setValueAtTime(.0001, now);
+      ambientMaster.gain.setTargetAtTime(.38, now, .5);
+      ambientMaster.connect(ctx.destination);
+
+      const rainLength = Math.floor(ctx.sampleRate * 3);
+      const rainBuffer = ctx.createBuffer(1, rainLength, ctx.sampleRate);
+      const rainData = rainBuffer.getChannelData(0);
+      let rainState = 0;
+      for (let i = 0; i < rainLength; i++) {
+        rainState = rainState * .94 + (Math.random() * 2 - 1) * .06;
+        rainData[i] = rainState + (Math.random() * 2 - 1) * .12;
+      }
+      const rain = ctx.createBufferSource(); rain.buffer = rainBuffer; rain.loop = true;
+      const rainHigh = ctx.createBiquadFilter(); rainHigh.type = "highpass"; rainHigh.frequency.value = 380;
+      const rainLow = ctx.createBiquadFilter(); rainLow.type = "lowpass"; rainLow.frequency.value = 6200;
+      const rainGain = ctx.createGain(); rainGain.gain.value = .18;
+      rain.connect(rainHigh); rainHigh.connect(rainLow); rainLow.connect(rainGain); rainGain.connect(ambientMaster);
+      rain.start(now);
+
+      const crackleLength = Math.floor(ctx.sampleRate * 4);
+      const crackleBuffer = ctx.createBuffer(1, crackleLength, ctx.sampleRate);
+      const crackleData = crackleBuffer.getChannelData(0);
+      for (let i = 0; i < crackleLength; i++) crackleData[i] = (Math.random() * 2 - 1) * .035;
+      for (let i = 0; i < 34; i++) {
+        const at = Math.floor(Math.random() * crackleLength);
+        crackleData[at] += (Math.random() * 2 - 1) * (.3 + Math.random() * .7);
+      }
+      const crackle = ctx.createBufferSource(); crackle.buffer = crackleBuffer; crackle.loop = true;
+      const crackleFilter = ctx.createBiquadFilter(); crackleFilter.type = "lowpass"; crackleFilter.frequency.value = 2600;
+      const crackleGain = ctx.createGain(); crackleGain.gain.value = .09;
+      crackle.connect(crackleFilter); crackleFilter.connect(crackleGain); crackleGain.connect(ambientMaster);
+      crackle.start(now);
+
+      const hum = ctx.createOscillator(); hum.type = "sine"; hum.frequency.value = 54;
+      const humGain = ctx.createGain(); humGain.gain.value = .035;
+      hum.connect(humGain); humGain.connect(ambientMaster); hum.start(now);
+    } catch (_) {}
+  }
+  function setSoundEnabled(enabled) {
+    localStorage.setItem("caseboard-sound", enabled ? "on" : "off");
+    if (ambientMaster) {
+      const ctx = getAudioContext();
+      ambientMaster.gain.cancelScheduledValues(ctx.currentTime);
+      ambientMaster.gain.setTargetAtTime(enabled ? .38 : .0001, ctx.currentTime, .12);
+    } else if (enabled) startAmbient();
   }
   function sound(type) {
-    if (localStorage.getItem("caseboard-sound") !== "on") return;
+    if (!soundEnabled()) return;
     try {
-      audioContext ||= new (window.AudioContext || window.webkitAudioContext)();
-      if (audioContext.state === "suspended") audioContext.resume();
-      const now = audioContext.currentTime;
-      const osc = audioContext.createOscillator(),
-        gain = audioContext.createGain();
-      osc.connect(gain);
-      gain.connect(audioContext.destination);
-      const freq = type === "pin" ? 620 : type === "camera" ? 1150 : 280;
-      osc.type = type === "paper" ? "triangle" : "sine";
-      osc.frequency.setValueAtTime(freq, now);
-      if (type === "paper")
-        osc.frequency.exponentialRampToValueAtTime(130, now + 0.13);
-      else
-        osc.frequency.exponentialRampToValueAtTime(
-          type === "camera" ? 230 : 260,
-          now + 0.075,
-        );
-      gain.gain.setValueAtTime(0.0001, now);
-      gain.gain.exponentialRampToValueAtTime(
-        type === "paper" ? 0.035 : 0.05,
-        now + 0.008,
-      );
-      gain.gain.exponentialRampToValueAtTime(
-        0.0001,
-        now + (type === "paper" ? 0.16 : 0.09),
-      );
-      osc.start(now);
-      osc.stop(now + (type === "paper" ? 0.17 : 0.1));
-    } catch (_) {
-      /* Sound is an optional enhancement. */
-    }
+      const ctx = getAudioContext();
+      const now=ctx.currentTime,osc=ctx.createOscillator(),gain=ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination); osc.type="triangle";
+      osc.frequency.setValueAtTime(type === "camera" ? 1100 : 360,now); osc.frequency.exponentialRampToValueAtTime(150,now+.12);
+      gain.gain.setValueAtTime(.0001,now); gain.gain.exponentialRampToValueAtTime(.03,now+.01); gain.gain.exponentialRampToValueAtTime(.0001,now+.14); osc.start(now); osc.stop(now+.15);
+    } catch (_) {}
+  }
+  function playHoverPaper() {
+    if (!soundEnabled()) return;
+    try {
+      const ctx = getAudioContext();
+      const now = ctx.currentTime;
+      const duration = .055;
+      const sampleCount = Math.max(1, Math.floor(ctx.sampleRate * duration));
+      const buffer = ctx.createBuffer(1, sampleCount, ctx.sampleRate);
+      const samples = buffer.getChannelData(0);
+      for (let i = 0; i < sampleCount; i++) {
+        // A slight, uneven amplitude shape gives the noise a papery scrape instead of a synthetic click.
+        const progress = i / sampleCount;
+        const envelope = Math.sin(Math.PI * progress) * (.78 + Math.random() * .22);
+        samples[i] = (Math.random() * 2 - 1) * envelope;
+      }
+      const noise = ctx.createBufferSource(); noise.buffer = buffer;
+      const filter = ctx.createBiquadFilter();
+      filter.type = "bandpass"; filter.frequency.value = 1650; filter.Q.value = .85;
+      const soften = ctx.createBiquadFilter();
+      soften.type = "lowpass"; soften.frequency.value = 4800;
+      const gain = ctx.createGain();
+      gain.gain.setValueAtTime(.0001, now);
+      gain.gain.exponentialRampToValueAtTime(.065, now + .006);
+      gain.gain.exponentialRampToValueAtTime(.0001, now + duration);
+      noise.connect(filter); filter.connect(soften); soften.connect(gain); gain.connect(audioContext.destination);
+      noise.start(now); noise.stop(now + duration);
+    } catch (_) {}
   }
   function openFile(node) {
-    const data = files[node.dataset.node];
-    if (!data) return;
-    active = node;
-    applyHighlight(node);
-    sound("paper");
-    document.querySelector("#modalKicker").textContent = data.kind;
-    document.querySelector("#modalTitle").textContent = data.title;
-    document.querySelector("#modalDescription").textContent = data.description;
-    document.querySelector("#modalMeta").textContent = data.meta;
-    const code = document.querySelector("#modalCode");
-    code.hidden = !data.code;
-    code.querySelector("code").textContent = data.code;
-    const visual = document.querySelector("#modalVisual");
-    visual.classList.toggle("visible", node.dataset.kind === "project");
-    const links = document.querySelector("#modalLinks");
-    links.replaceChildren();
-    if (node.dataset.kind === "project") {
-      ["LIVE DEMO", "GITHUB REPOSITORY"].forEach((label) => {
-        const item = document.createElement("span");
-        item.textContent = `${label} · ADD URL`;
-        links.append(item);
-      });
-      sound("camera");
+    const entry=records.get(node.dataset.node); if (!entry) return;
+    const item=entry.data; active=node; applyHighlight(node); sound("paper");
+    let kind,title,description,meta,extra="";
+    if(entry.kind === "dossier") {
+      kind="CLASSIFIED / ABOUT ME"; title=item.name; description=`${item.alias}\n${item.location}\n\n${item.summary}`;
+      meta=`CASE FILE: ${item.stamp}`;
+      extra=`Phone: ${item.contact.phone}`;
+    } else if(entry.kind === "project") {
+      kind=`CASE FILE / ${item.label}`; title=item.title; description=item.notes; meta=`CLASSIFICATION: ${item.classification}`; sound("camera");
+    } else if(entry.kind === "report") {
+      kind=item.caseNo; title=item.role; description=item.log; meta=`${item.company} · ${item.duration}`;
+    } else if(entry.kind === "skill") {
+      kind=`FORENSIC SKILL / ${item.category}`; title=item.name; description=item.details; meta="EVIDENCE TAG: SKILLS";
+    } else {
+      kind=`OFFICIAL RECORD / ${item.stamp}`; title=item.title; description=item.notes; meta=`ISSUER: ${item.issuer}`;
     }
-    if (node.dataset.kind === "contact") {
-      const email = document.createElement("a");
-      email.href = "mailto:hello@example.com";
-      email.textContent = "EMAIL THE DESK";
-      links.append(email);
-    }
-    if (!dialog.open) dialog.showModal();
+    document.querySelector("#modalKicker").textContent=kind;
+    document.querySelector("#modalTitle").textContent=title;
+    document.querySelector("#modalDescription").textContent=description;
+    document.querySelector("#modalMeta").textContent=meta;
+    const code=document.querySelector("#modalCode"); code.hidden=true; code.querySelector("code").textContent="";
+    const visual=document.querySelector("#modalVisual"); visual.classList.toggle("visible",entry.kind === "project");
+    const linksBox=document.querySelector("#modalLinks"); linksBox.replaceChildren();
+    const addLink=(label,url)=>{if(!url)return;const a=el("a","",label);a.href=url;a.target="_blank";a.rel="noopener noreferrer";linksBox.append(a);};
+    if(entry.kind === "dossier") { addLink("EMAIL",`mailto:${item.contact.email}`); addLink("ARTSTATION",item.contact.artstation); addLink("ITCH.IO",item.contact.itchio); }
+    if(extra) linksBox.append(el("span","",extra));
+    if(!dialog.open) dialog.showModal();
   }
-  nodes.forEach((node) => {
-    node.addEventListener("pointerenter", () => {
-      if (!mobile.matches) {
-        active = node;
-        applyHighlight(node);
-      }
-    });
-    node.addEventListener("pointerleave", () => {
-      if (!mobile.matches && !dialog.open) {
-        active = null;
-        applyHighlight(null);
-      }
-    });
-    node.addEventListener("focus", () => {
-      active = node;
-      applyHighlight(node);
-    });
-    node.addEventListener("blur", () => {
-      if (!dialog.open) {
-        active = null;
-        applyHighlight(null);
-      }
-    });
-    node.addEventListener("click", () => {
-      sound("pin");
-      openFile(node);
-    });
-    node.addEventListener("keydown", (event) => {
-      if (event.key === "Enter" || event.key === " ") {
-        event.preventDefault();
-        openFile(node);
-      }
-    });
-  });
-  document.querySelector("#closeDialog").addEventListener("click", () => {
-    sound("paper");
-    dialog.close();
-  });
-  dialog.addEventListener("click", (event) => {
-    if (event.target === dialog) dialog.close();
-  });
-  dialog.addEventListener("close", () => {
-    active = null;
-    applyHighlight(null);
-  });
-  viewport.addEventListener("pointerdown", (event) => {
-    if (mobile.matches || event.target.closest(".node")) return;
-    dragging = true;
-    startX = event.clientX - panX;
-    startY = event.clientY - panY;
-    viewport.classList.add("dragging");
-    viewport.setPointerCapture(event.pointerId);
-  });
-  viewport.addEventListener("pointermove", (event) => {
-    if (!dragging) return;
-    panX = event.clientX - startX;
-    panY = event.clientY - startY;
-    constrain();
-    drawWorld();
-  });
-  function stopDrag() {
-    dragging = false;
-    viewport.classList.remove("dragging");
+  function attachNodeEvents(node) {
+    node.addEventListener("pointerenter",()=>{if(!mobile.matches){active=node;applyHighlight(node);playHoverPaper();}});
+    node.addEventListener("pointerleave",()=>{if(!mobile.matches&&!dialog.open){active=null;applyHighlight(null);}});
+    node.addEventListener("focus",()=>{active=node;applyHighlight(node);});
+    node.addEventListener("blur",()=>{if(!dialog.open){active=null;applyHighlight(null);}});
+    node.addEventListener("click",()=>{sound("pin");openFile(node);});
+    node.addEventListener("keydown",event=>{if(event.key==="Enter"||event.key===" "){event.preventDefault();openFile(node);}});
   }
-  viewport.addEventListener("pointerup", stopDrag);
-  viewport.addEventListener("pointercancel", stopDrag);
-  viewport.addEventListener(
-    "wheel",
-    (event) => {
-      if (mobile.matches) return;
-      event.preventDefault();
-      zoomAt(
-        scale * (event.deltaY < 0 ? 1.1 : 0.91),
-        event.clientX,
-        event.clientY,
-      );
-    },
-    { passive: false },
-  );
-  document
-    .querySelector("#zoomIn")
-    .addEventListener("click", () => zoomAt(scale * 1.2));
-  document
-    .querySelector("#zoomOut")
-    .addEventListener("click", () => zoomAt(scale / 1.2));
-  document.querySelector("#resetView").addEventListener("click", () => {
-    scale = 1;
-    panX = 0;
-    panY = 0;
-    drawWorld();
+  document.querySelector("#closeDialog").addEventListener("click",()=>{sound("paper");dialog.close();});
+  dialog.addEventListener("click",event=>{if(event.target===dialog)dialog.close();});
+  dialog.addEventListener("close",()=>{active=null;applyHighlight(null);});
+  viewport.addEventListener("pointerdown",event=>{if(mobile.matches||event.target.closest(".node"))return;dragging=true;startX=event.clientX-panX;startY=event.clientY-panY;viewport.classList.add("dragging");viewport.setPointerCapture(event.pointerId);});
+  viewport.addEventListener("pointermove",event=>{if(!dragging)return;panX=event.clientX-startX;panY=event.clientY-startY;constrain();drawWorld();});
+  const stopDrag=()=>{dragging=false;viewport.classList.remove("dragging");};
+  viewport.addEventListener("pointerup",stopDrag); viewport.addEventListener("pointercancel",stopDrag);
+  viewport.addEventListener("wheel",event=>{if(mobile.matches)return;event.preventDefault();zoomAt(scale*(event.deltaY<0?1.1:.91),event.clientX,event.clientY);},{passive:false});
+  document.querySelector("#zoomIn").addEventListener("click",()=>zoomAt(scale*1.2));
+  document.querySelector("#zoomOut").addEventListener("click",()=>zoomAt(scale/1.2));
+  document.querySelector("#resetView").addEventListener("click",()=>{scale=.82;panX=0;panY=220;drawWorld();});
+  mini.addEventListener("click",event=>{if(mobile.matches)return;const rect=mini.getBoundingClientRect(),x=((event.clientX-rect.left-8)/(mini.clientWidth-16))*W,y=((event.clientY-rect.top-8)/(mini.clientHeight-16))*H;panX=-(x-W/2)*scale;panY=-(y-H/2)*scale;constrain();drawWorld();});
+  const soundButton=document.querySelector("#soundToggle");
+  function updateSoundButton(){const enabled=soundEnabled();soundButton.setAttribute("aria-pressed",String(enabled));soundButton.querySelector("span").textContent=enabled?" [SFX: AMBIENT NOIR ON]":" [SFX: AMBIENT NOIR OFF]";}
+  soundButton.addEventListener("click",()=>{const enabled=!soundEnabled();setSoundEnabled(enabled);updateSoundButton();sound(enabled?"pin":"paper");toast.textContent=enabled?"Ambient and sound effects enabled":"Ambient and sound effects muted";toast.classList.add("show");clearTimeout(toastTimer);toastTimer=setTimeout(()=>toast.classList.remove("show"),1800);});
+  document.addEventListener("pointerover",event=>{
+    const control=event.target.closest(".sound-toggle, .canvas-controls button, .close-file, .case-links a");
+    if(control && !control.contains(event.relatedTarget)) playHoverPaper();
   });
-  document.querySelector("#minimap").addEventListener("click", (event) => {
-    if (mobile.matches) return;
-    const rect = mini.getBoundingClientRect();
-    const x =
-      ((event.clientX - rect.left - 8) / (mini.clientWidth - 16)) * 1200;
-    const y = ((event.clientY - rect.top - 8) / (mini.clientHeight - 16)) * 760;
-    panX = -(x - 600) * scale;
-    panY = -(y - 380) * scale;
-    constrain();
-    drawWorld();
-  });
-  const soundButton = document.querySelector("#soundToggle");
-  function updateSoundButton() {
-    const enabled = localStorage.getItem("caseboard-sound") === "on";
-    soundButton.setAttribute("aria-pressed", String(enabled));
-    soundButton.querySelector("span").textContent = enabled
-      ? " SOUND ON"
-      : " SOUND OFF";
-  }
-  soundButton.addEventListener("click", () => {
-    const enabled = localStorage.getItem("caseboard-sound") !== "on";
-    localStorage.setItem("caseboard-sound", enabled ? "on" : "off");
-    updateSoundButton();
-    if (enabled) {
-      sound("pin");
-      setToast("Sound effects enabled");
-    } else setToast("Sound effects muted");
-  });
-  mobile.addEventListener("change", () => {
-    active = null;
-    applyHighlight(null);
-    drawWorld();
-  });
-  window.addEventListener("resize", () => {
-    constrain();
-    drawWorld();
-  });
-  window.addEventListener(
-    "pointermove",
-    (event) => {
-      document.documentElement.style.setProperty("--mx", `${event.clientX}px`);
-      document.documentElement.style.setProperty("--my", `${event.clientY}px`);
-    },
-    { passive: true },
-  );
+  mobile.addEventListener("change",()=>{active=null;applyHighlight(null);drawWorld();});
+  window.addEventListener("resize",()=>{constrain();drawWorld();});
+  document.addEventListener("pointerdown",startAmbient,{capture:true});
+  document.addEventListener("click",startAmbient,{capture:true});
+  document.addEventListener("keydown",event=>{if(["w","a","s","d"].includes(event.key.toLowerCase()))startAmbient();},{capture:true});
+  window.addEventListener("pointermove",event=>{document.documentElement.style.setProperty("--mouse-x",`${event.clientX}px`);document.documentElement.style.setProperty("--mouse-y",`${event.clientY}px`);},{passive:true});
   updateSoundButton();
-  requestAnimationFrame(() => {
-    drawWorld();
-  });
+  fetch("JSON.json").then(response=>{if(!response.ok)throw new Error("Could not load JSON.json");return response.json();}).then(data=>{buildNodes(data);requestAnimationFrame(()=>{drawWorld();});}).catch(error=>{const note=document.querySelector("#loadingNote");if(note)note.textContent="CASE EVIDENCE COULD NOT BE LOADED. Open this board through a local web server.";console.error(error);});
 })();

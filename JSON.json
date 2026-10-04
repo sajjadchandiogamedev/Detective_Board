@@ -1,0 +1,148 @@
+{
+  "dossier": {
+    "id": "dossier-01",
+    "stamp": "SUBJECT DOSSIER: SAJJAD CHANDIO (LEAD 3D ARTIST)",
+    "name": "Sajjad Chandio",
+    "alias": "3D Game Artist & Technical Instructor",
+    "location": "Karachi, Sindh, Pakistan",
+    "contact": {
+      "phone": "03708218144",
+      "email": "sajjadchandiogamedev@gmail.com",
+      "artstation": "https://sajjadchandio.artstation.com/",
+      "itchio": "https://sajjad-chandio.itch.io"
+    },
+    "summary": "Specializing in end-to-end 3D game asset pipelines, hard-surface modeling, and real-time environment art across Unity and Unreal Engine 5. Currently training the next generation of developers at Aptech Global while engineering commercial PC game environments."
+  },
+
+  "caseFiles": [
+    {
+      "id": "project-01",
+      "title": "Commercial PC FPS Horror Title",
+      "classification": "STEAM RELEASED GAME",
+      "label": "EVIDENCE ITEM: REAL-TIME BUILD",
+      "notes": "Spearheaded the entire 3D asset pipeline at Kheddo Entertainment. Solely responsible for all in-game props, hard-surface assets, lighting mood, and environment art for a commercial horror title.",
+      "connectedNodes": ["tag-blender", "tag-substance", "report-kheddo", "tag-environment"]
+    },
+    {
+      "id": "project-02",
+      "title": "Aptech Vision 2026 Showcase",
+      "classification": "LEAD EXHIBITION PROJECT",
+      "label": "EVIDENCE ITEM: REAL-TIME BUILD",
+      "notes": "Leading high-stakes student and faculty game development projects scheduled for showcase at Aptech Vision 2026.",
+      "connectedNodes": ["report-aptech", "tag-unity", "tag-leadership"]
+    },
+    {
+      "id": "project-03",
+      "title": "ArtStation & itch.io Archives",
+      "classification": "CONFIDENTIAL DOSSIER",
+      "label": "EVIDENCE ITEM: REAL-TIME BUILD",
+      "notes": "Archived 3D models, PBR textures, and playable game prototypes. Viewable at sajjadchandio.artstation.com and sajjad-chandio.itch.io.",
+      "connectedNodes": ["dossier-01", "tag-blender", "tag-substance"]
+    }
+  ],
+
+  "incidentReports": [
+    {
+      "id": "report-aptech",
+      "caseNo": "STUDIO PRODUCTION LOG #2024-2026",
+      "role": "Computer Science Instructor",
+      "company": "Aptech Global (Larkana Campus)",
+      "duration": "April 2025 – Present",
+      "log": "Empowering students in game development, Unity, Blender, and computer science fundamentals. Leading projects for the upcoming Aptech Vision 2026 event."
+    },
+    {
+      "id": "report-tryunity",
+      "caseNo": "STUDIO PRODUCTION LOG #2024-2026",
+      "role": "Marketing Head",
+      "company": "TryUnity Solutions",
+      "duration": "February 2025 – Present",
+      "log": "Implemented psychological client outreach strategies and focused content delivery, expanding the company client base by 40%."
+    },
+    {
+      "id": "report-kheddo",
+      "caseNo": "STUDIO PRODUCTION LOG #2024-2026",
+      "role": "3D Artist",
+      "company": "Kheddo Entertainment",
+      "duration": "August 2025 – November 2025",
+      "log": "Managed end-to-end 3D asset production for a commercial FPS horror game. Delivered optimized, real-time props and environment art."
+    },
+    {
+      "id": "report-junktech",
+      "caseNo": "STUDIO PRODUCTION LOG #2024-2026",
+      "role": "Game Designer & 3D Artist",
+      "company": "The Junk Tech Pvt. Ltd.",
+      "duration": "October 2024 – February 2025",
+      "log": "Engineered mobile game environments and interactive elements in Unity from initial concept blockouts to final lightmapping."
+    }
+  ],
+
+  "evidenceTags": [
+    {
+      "id": "tag-blender",
+      "category": "3D TOOL",
+      "name": "Blender 3D",
+      "details": "Hard-Surface Modeling, UV Unwrapping, Asset Blockouts"
+    },
+    {
+      "id": "tag-substance",
+      "category": "TEXTURE TOOL",
+      "name": "Substance Painter",
+      "details": "PBR Texturing, Normal Maps, Custom Alpha Maps"
+    },
+    {
+      "id": "tag-unity",
+      "category": "ENGINE",
+      "name": "Unity Engine",
+      "details": "Level Design, C# Mechanics, Lighting, Screenshots"
+    },
+    {
+      "id": "tag-unreal",
+      "category": "ENGINE",
+      "name": "Unreal Engine 5",
+      "details": "Environment Blockouts, Lighting, Virtual Production"
+    },
+    {
+      "id": "tag-environment",
+      "category": "PIPELINE",
+      "name": "Game Art Pipeline",
+      "details": "Prop Creation, Real-Time Optimization, Level Art"
+    },
+    {
+      "id": "tag-leadership",
+      "category": "SOFT SKILL",
+      "name": "Leadership & Instruction",
+      "details": "Public Speaking, Technical Curriculum, Team Lead"
+    }
+  ],
+
+  "certifiedDocuments": [
+    {
+      "id": "cert-01",
+      "stamp": "OFFICIAL JUDGE",
+      "title": "Federal Govt. Steam Exhibition Judge",
+      "issuer": "District Kambar",
+      "notes": "Recognized as an official project judge for the Federal Government Steam Exhibition."
+    },
+    {
+      "id": "cert-02",
+      "stamp": "VERIFIED RECORD",
+      "title": "Global Game Jam 2024",
+      "issuer": "Global Game Jam",
+      "notes": "Completed and released a game jam project within constrained timeframe."
+    },
+    {
+      "id": "cert-03",
+      "stamp": "CERTIFIED SPECIALIST",
+      "title": "UE5: Virtual Production & Car Rendering",
+      "issuer": "Project-Based Certification",
+      "notes": "Advanced training in automotive rendering and modern virtual production workflows in Unreal Engine 5."
+    },
+    {
+      "id": "cert-04",
+      "stamp": "INTERNSHIP GRADUATE",
+      "title": "M-Labs Game Developer Internship",
+      "issuer": "M-Labs",
+      "notes": "Practical hands-on training in 3D environment asset creation and Unity integration."
+    }
+  ]
+}
