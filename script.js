@@ -14,8 +14,10 @@
   let scale = 0.82, panX = 0, panY = 220, dragging = false, startX = 0, startY = 0;
   let active = null, toastTimer, audioContext;
   const movementKeys = new Set();
+  const zoomKeys = new Set();
   let moveFrame = 0, velocityX = 0, velocityY = 0;
-  let moveOsc = null, moveGain = null, moveStopTimer = 0;
+  let dragSource = null, dragFilter = null, dragGain = null, dragStopTimer = 0;
+  let isDragSoundPlaying = false;
 
   const el = (tag, className, text) => {
     const item = document.createElement(tag);
@@ -157,7 +159,7 @@
   function zoomAt(next, clientX, clientY) {
     if (mobile.matches) return;
     const rect = viewport.getBoundingClientRect(), px=(clientX ?? rect.left+rect.width/2)-rect.left-rect.width/2, py=(clientY ?? rect.top+rect.height/2)-rect.top-rect.height/2;
-    const updated=Math.max(.45,Math.min(1.35,next)), ratio=updated/scale;
+    const updated=Math.max(.5,Math.min(2,next)), ratio=updated/scale;
     panX=px-ratio*(px-panX); panY=py-ratio*(py-panY); scale=updated; constrain(); drawWorld();
   }
   function updateMini() {
@@ -234,38 +236,50 @@
     if (!soundEnabled()) return;
     try {
       const ctx = getAudioContext();
-      clearTimeout(moveStopTimer);
-      if (moveOsc) {
-        moveGain.gain.cancelScheduledValues(ctx.currentTime);
-        moveGain.gain.setTargetAtTime(.012, ctx.currentTime, .025);
+      clearTimeout(dragStopTimer);
+      if (isDragSoundPlaying) {
+        dragGain.gain.cancelScheduledValues(ctx.currentTime);
+        dragGain.gain.setTargetAtTime(.07, ctx.currentTime, .02);
         return;
       }
-      moveOsc = ctx.createOscillator();
-      moveGain = ctx.createGain();
-      moveOsc.type = "triangle";
-      moveOsc.frequency.setValueAtTime(60, ctx.currentTime);
-      moveGain.gain.setValueAtTime(.0001, ctx.currentTime);
-      moveGain.gain.linearRampToValueAtTime(.012, ctx.currentTime + .08);
-      moveOsc.connect(moveGain);
-      moveGain.connect(ctx.destination);
-      moveOsc.start();
+      const bufferSize = Math.floor(ctx.sampleRate);
+      const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+      const samples = buffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) samples[i] = Math.random() * 2 - 1;
+
+      dragSource = ctx.createBufferSource();
+      dragSource.buffer = buffer;
+      dragSource.loop = true;
+      dragFilter = ctx.createBiquadFilter();
+      dragFilter.type = "lowpass";
+      dragFilter.frequency.setValueAtTime(350, ctx.currentTime);
+      dragGain = ctx.createGain();
+      dragGain.gain.setValueAtTime(.001, ctx.currentTime);
+      dragGain.gain.linearRampToValueAtTime(.07, ctx.currentTime + .08);
+      dragSource.connect(dragFilter);
+      dragFilter.connect(dragGain);
+      dragGain.connect(ctx.destination);
+      dragSource.start();
+      isDragSoundPlaying = true;
     } catch (_) {}
   }
   function stopMoveSound() {
-    if (!moveGain || !moveOsc) return;
+    if (!isDragSoundPlaying || !dragGain || !dragSource) return;
     try {
       const ctx = getAudioContext();
-      const oscillator = moveOsc, gain = moveGain;
+      const source = dragSource, filter = dragFilter, gain = dragGain;
       gain.gain.cancelScheduledValues(ctx.currentTime);
       gain.gain.setValueAtTime(gain.gain.value, ctx.currentTime);
-      gain.gain.linearRampToValueAtTime(0, ctx.currentTime + .1);
-      clearTimeout(moveStopTimer);
-      moveStopTimer = setTimeout(() => {
-        if (moveOsc !== oscillator) return;
-        try { oscillator.stop(); oscillator.disconnect(); gain.disconnect(); } catch (_) {}
-        moveOsc = null;
-        moveGain = null;
-      }, 120);
+      gain.gain.linearRampToValueAtTime(.001, ctx.currentTime + .08);
+      clearTimeout(dragStopTimer);
+      dragStopTimer = setTimeout(() => {
+        if (dragSource !== source) return;
+        try { source.stop(); source.disconnect(); filter.disconnect(); gain.disconnect(); } catch (_) {}
+        dragSource = null;
+        dragFilter = null;
+        dragGain = null;
+        isDragSoundPlaying = false;
+      }, 100);
     } catch (_) {}
   }
   function isTypingTarget(target) {
@@ -274,12 +288,17 @@
   function canPanWithKeys() {
     return !dialog.open && !isTypingTarget(document.activeElement) && !mobile.matches;
   }
+  function syncMoveSound() {
+    if (movementKeys.size || zoomKeys.size || dragging) startMoveSound();
+    else stopMoveSound();
+  }
   function animatePan() {
     moveFrame = 0;
     if (!canPanWithKeys()) {
       movementKeys.clear();
+      zoomKeys.clear();
       velocityX = velocityY = 0;
-      stopMoveSound();
+      syncMoveSound();
       return;
     }
     const x = Number(movementKeys.has("ArrowRight") || movementKeys.has("d") || movementKeys.has("D")) - Number(movementKeys.has("ArrowLeft") || movementKeys.has("a") || movementKeys.has("A"));
@@ -297,27 +316,33 @@
       panY -= velocityY;
       constrain();
       drawWorld();
-      if (movementKeys.size) startMoveSound();
-      else stopMoveSound();
-    } else stopMoveSound();
-    if (movementKeys.size || velocityX || velocityY) moveFrame = requestAnimationFrame(animatePan);
+    }
+    if (zoomKeys.size) {
+      const direction = Number(zoomKeys.has("e")) - Number(zoomKeys.has("q"));
+      if (direction) zoomAt(scale * Math.pow(1.012, direction));
+    }
+    syncMoveSound();
+    if (movementKeys.size || zoomKeys.size || velocityX || velocityY) moveFrame = requestAnimationFrame(animatePan);
   }
   function ensurePanFrame() {
     if (!moveFrame) moveFrame = requestAnimationFrame(animatePan);
   }
   document.addEventListener("keydown", event => {
     const key = event.key.length === 1 ? event.key.toLowerCase() : event.key;
-    if (!["w", "a", "s", "d", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(key) || !canPanWithKeys() || isTypingTarget(event.target)) return;
+    if (!["w", "a", "s", "d", "q", "e", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(key) || !canPanWithKeys() || isTypingTarget(event.target)) return;
     event.preventDefault();
-    movementKeys.add(key);
+    if (["q", "e"].includes(key)) zoomKeys.add(key);
+    else movementKeys.add(key);
+    syncMoveSound();
     ensurePanFrame();
   });
   document.addEventListener("keyup", event => {
     const key = event.key.length === 1 ? event.key.toLowerCase() : event.key;
     movementKeys.delete(key);
-    if (!movementKeys.size) stopMoveSound();
+    zoomKeys.delete(key);
+    syncMoveSound();
   });
-  window.addEventListener("blur", () => { movementKeys.clear(); velocityX = velocityY = 0; stopMoveSound(); });
+  window.addEventListener("blur", () => { movementKeys.clear(); zoomKeys.clear(); velocityX = velocityY = 0; syncMoveSound(); });
   function sound(type) {
     if (!soundEnabled()) return;
     try {
@@ -397,8 +422,8 @@
   dialog.addEventListener("click",event=>{if(event.target===dialog)dialog.close();});
   dialog.addEventListener("close",()=>{active=null;applyHighlight(null);});
   viewport.addEventListener("pointerdown",event=>{if(mobile.matches||event.target.closest(".node"))return;dragging=true;startX=event.clientX-panX;startY=event.clientY-panY;viewport.classList.add("dragging");viewport.setPointerCapture(event.pointerId);});
-  viewport.addEventListener("pointermove",event=>{if(!dragging)return;const nextX=event.clientX-startX,nextY=event.clientY-startY;if(nextX===panX&&nextY===panY)return;panX=nextX;panY=nextY;constrain();drawWorld();startMoveSound();});
-  const stopDrag=()=>{if(dragging)stopMoveSound();dragging=false;viewport.classList.remove("dragging");};
+  viewport.addEventListener("pointermove",event=>{if(!dragging)return;const nextX=event.clientX-startX,nextY=event.clientY-startY;if(nextX===panX&&nextY===panY)return;panX=nextX;panY=nextY;constrain();drawWorld();syncMoveSound();});
+  const stopDrag=()=>{dragging=false;viewport.classList.remove("dragging");syncMoveSound();};
   viewport.addEventListener("pointerup",stopDrag); viewport.addEventListener("pointercancel",stopDrag);
   viewport.addEventListener("wheel",event=>{if(mobile.matches)return;event.preventDefault();zoomAt(scale*(event.deltaY<0?1.1:.91),event.clientX,event.clientY);},{passive:false});
   document.querySelector("#zoomIn").addEventListener("click",()=>zoomAt(scale*1.2));
@@ -416,7 +441,7 @@
   window.addEventListener("resize",()=>{constrain();drawWorld();});
   document.addEventListener("pointerdown",startAmbient,{capture:true});
   document.addEventListener("click",startAmbient,{capture:true});
-  document.addEventListener("keydown",event=>{if(["w","a","s","d"].includes(event.key.toLowerCase()))startAmbient();},{capture:true});
+  document.addEventListener("keydown",event=>{if(["w","a","s","d","q","e"].includes(event.key.toLowerCase()))startAmbient();},{capture:true});
   window.addEventListener("pointermove",event=>{document.documentElement.style.setProperty("--mouse-x",`${event.clientX}px`);document.documentElement.style.setProperty("--mouse-y",`${event.clientY}px`);},{passive:true});
   updateSoundButton();
   fetch("JSON.json").then(response=>{if(!response.ok)throw new Error("Could not load JSON.json");return response.json();}).then(data=>{buildNodes(data);requestAnimationFrame(()=>{drawWorld();});}).catch(error=>{const note=document.querySelector("#loadingNote");if(note)note.textContent="CASE EVIDENCE COULD NOT BE LOADED. Open this board through a local web server.";console.error(error);});
