@@ -13,6 +13,9 @@
   let nodes = [], records = new Map(), links = new Map();
   let scale = 0.82, panX = 0, panY = 220, dragging = false, startX = 0, startY = 0;
   let active = null, toastTimer, audioContext;
+  const movementKeys = new Set();
+  let moveFrame = 0, velocityX = 0, velocityY = 0;
+  let moveOsc = null, moveGain = null, moveStopTimer = 0;
 
   const el = (tag, className, text) => {
     const item = document.createElement(tag);
@@ -55,7 +58,7 @@
       links.set(entry.id, new Set());
 
       if (entry.kind === "dossier") {
-        card.append(el("span", "classified-stamp dossier-stamp", "SUBJECT DOSSIER: SAJJAD CHANDIO"));
+        card.append(el("span", "classified-stamp dossier-stamp", dossier.stamp));
         const tab = el("span", "file-tab", dossier.stamp);
         const head = el("div", "dossier-head");
         head.append(el("div", "avatar", "SC"));
@@ -68,16 +71,16 @@
         card.append(el("span", "pin pin-red"));
         const photo = el("div", "photo photo-city");
         photo.append(el("span", "", item.label), el("b", "", item.classification), el("i", "", "✳"));
-        card.append(photo, el("h2", "", item.title), el("p", "", item.classification), el("span", "hand-note", "evidence on record"));
+        card.append(photo, el("h2", "", item.title), el("p", "", item.classification), el("span", "hand-note", "build evidence on record"));
       } else if (entry.kind === "report") {
         const item = entry.data;
-        card.append(el("span", "clip"), el("span", "micro", item.caseNo), el("h2", "", item.role), el("div", "memo-rule"), el("p", "", `${item.company} · ${item.duration}`), el("p", "report-log", item.log), el("span", "byline", "INCIDENT FILE / VERIFIED"));
+        card.append(el("span", "clip"), el("span", "micro", item.caseNo), el("h2", "", item.role), el("div", "memo-rule"), el("p", "", `${item.company} · ${item.duration}`), el("p", "report-log", item.log), el("span", "byline", "STUDIO FILE / VERIFIED"));
       } else if (entry.kind === "skill") {
         const item = entry.data;
         card.append(el("span", "tape"), el("span", "micro", item.category), el("h2", "", item.name), el("p", "", item.details), el("div", "skill-meter"));
       } else {
         const item = entry.data;
-        card.append(el("span", "tape"), el("span", "micro", "CERTIFIED DOCUMENT"), el("div", "cert-seal", "✓"), el("h2", "", item.title), el("p", "", item.issuer), el("span", "stamp", item.stamp));
+        card.append(el("span", "tape"), el("span", "micro", "VERIFIED INDUSTRY CLEARANCES"), el("div", "cert-seal", "✓"), el("h2", "", item.title), el("p", "", item.issuer), el("span", "stamp", item.stamp));
       }
       worldCards.append(card);
     });
@@ -225,7 +228,96 @@
       ambientMaster.gain.cancelScheduledValues(ctx.currentTime);
       ambientMaster.gain.setTargetAtTime(enabled ? .38 : .0001, ctx.currentTime, .12);
     } else if (enabled) startAmbient();
+    if (!enabled) stopMoveSound();
   }
+  function startMoveSound() {
+    if (!soundEnabled()) return;
+    try {
+      const ctx = getAudioContext();
+      clearTimeout(moveStopTimer);
+      if (moveOsc) {
+        moveGain.gain.cancelScheduledValues(ctx.currentTime);
+        moveGain.gain.setTargetAtTime(.012, ctx.currentTime, .025);
+        return;
+      }
+      moveOsc = ctx.createOscillator();
+      moveGain = ctx.createGain();
+      moveOsc.type = "triangle";
+      moveOsc.frequency.setValueAtTime(60, ctx.currentTime);
+      moveGain.gain.setValueAtTime(.0001, ctx.currentTime);
+      moveGain.gain.linearRampToValueAtTime(.012, ctx.currentTime + .08);
+      moveOsc.connect(moveGain);
+      moveGain.connect(ctx.destination);
+      moveOsc.start();
+    } catch (_) {}
+  }
+  function stopMoveSound() {
+    if (!moveGain || !moveOsc) return;
+    try {
+      const ctx = getAudioContext();
+      const oscillator = moveOsc, gain = moveGain;
+      gain.gain.cancelScheduledValues(ctx.currentTime);
+      gain.gain.setValueAtTime(gain.gain.value, ctx.currentTime);
+      gain.gain.linearRampToValueAtTime(0, ctx.currentTime + .1);
+      clearTimeout(moveStopTimer);
+      moveStopTimer = setTimeout(() => {
+        if (moveOsc !== oscillator) return;
+        try { oscillator.stop(); oscillator.disconnect(); gain.disconnect(); } catch (_) {}
+        moveOsc = null;
+        moveGain = null;
+      }, 120);
+    } catch (_) {}
+  }
+  function isTypingTarget(target) {
+    return target instanceof Element && (target.matches("input, textarea, select, [contenteditable='true']") || target.closest("[contenteditable='true']"));
+  }
+  function canPanWithKeys() {
+    return !dialog.open && !isTypingTarget(document.activeElement) && !mobile.matches;
+  }
+  function animatePan() {
+    moveFrame = 0;
+    if (!canPanWithKeys()) {
+      movementKeys.clear();
+      velocityX = velocityY = 0;
+      stopMoveSound();
+      return;
+    }
+    const x = Number(movementKeys.has("ArrowRight") || movementKeys.has("d") || movementKeys.has("D")) - Number(movementKeys.has("ArrowLeft") || movementKeys.has("a") || movementKeys.has("A"));
+    const y = Number(movementKeys.has("ArrowDown") || movementKeys.has("s") || movementKeys.has("S")) - Number(movementKeys.has("ArrowUp") || movementKeys.has("w") || movementKeys.has("W"));
+    const length = Math.hypot(x, y) || 1;
+    const acceleration = movementKeys.size ? 0.82 : 0;
+    velocityX = (velocityX + x / length * acceleration) * (movementKeys.size ? 1 : .84);
+    velocityY = (velocityY + y / length * acceleration) * (movementKeys.size ? 1 : .84);
+    velocityX = Math.max(-12, Math.min(12, velocityX));
+    velocityY = Math.max(-12, Math.min(12, velocityY));
+    if (Math.abs(velocityX) < .08) velocityX = 0;
+    if (Math.abs(velocityY) < .08) velocityY = 0;
+    if (velocityX || velocityY) {
+      panX -= velocityX;
+      panY -= velocityY;
+      constrain();
+      drawWorld();
+      if (movementKeys.size) startMoveSound();
+      else stopMoveSound();
+    } else stopMoveSound();
+    if (movementKeys.size || velocityX || velocityY) moveFrame = requestAnimationFrame(animatePan);
+  }
+  function ensurePanFrame() {
+    if (!moveFrame) moveFrame = requestAnimationFrame(animatePan);
+  }
+  document.addEventListener("keydown", event => {
+    const key = event.key.length === 1 ? event.key.toLowerCase() : event.key;
+    if (!["w", "a", "s", "d", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(key) || !canPanWithKeys() || isTypingTarget(event.target)) return;
+    event.preventDefault();
+    movementKeys.add(key);
+    ensurePanFrame();
+  });
+  document.addEventListener("keyup", event => {
+    const key = event.key.length === 1 ? event.key.toLowerCase() : event.key;
+    movementKeys.delete(key);
+    if (!movementKeys.size) stopMoveSound();
+  });
+  window.addEventListener("blur", () => { movementKeys.clear(); velocityX = velocityY = 0; stopMoveSound(); });
   function sound(type) {
     if (!soundEnabled()) return;
     try {
@@ -277,7 +369,7 @@
     } else if(entry.kind === "report") {
       kind=item.caseNo; title=item.role; description=item.log; meta=`${item.company} · ${item.duration}`;
     } else if(entry.kind === "skill") {
-      kind=`FORENSIC SKILL / ${item.category}`; title=item.name; description=item.details; meta="EVIDENCE TAG: SKILLS";
+      kind=`PIPELINE TOOLKIT / ${item.category}`; title=item.name; description=item.details; meta="REAL-TIME PRODUCTION TOOL";
     } else {
       kind=`OFFICIAL RECORD / ${item.stamp}`; title=item.title; description=item.notes; meta=`ISSUER: ${item.issuer}`;
     }
@@ -305,8 +397,8 @@
   dialog.addEventListener("click",event=>{if(event.target===dialog)dialog.close();});
   dialog.addEventListener("close",()=>{active=null;applyHighlight(null);});
   viewport.addEventListener("pointerdown",event=>{if(mobile.matches||event.target.closest(".node"))return;dragging=true;startX=event.clientX-panX;startY=event.clientY-panY;viewport.classList.add("dragging");viewport.setPointerCapture(event.pointerId);});
-  viewport.addEventListener("pointermove",event=>{if(!dragging)return;panX=event.clientX-startX;panY=event.clientY-startY;constrain();drawWorld();});
-  const stopDrag=()=>{dragging=false;viewport.classList.remove("dragging");};
+  viewport.addEventListener("pointermove",event=>{if(!dragging)return;const nextX=event.clientX-startX,nextY=event.clientY-startY;if(nextX===panX&&nextY===panY)return;panX=nextX;panY=nextY;constrain();drawWorld();startMoveSound();});
+  const stopDrag=()=>{if(dragging)stopMoveSound();dragging=false;viewport.classList.remove("dragging");};
   viewport.addEventListener("pointerup",stopDrag); viewport.addEventListener("pointercancel",stopDrag);
   viewport.addEventListener("wheel",event=>{if(mobile.matches)return;event.preventDefault();zoomAt(scale*(event.deltaY<0?1.1:.91),event.clientX,event.clientY);},{passive:false});
   document.querySelector("#zoomIn").addEventListener("click",()=>zoomAt(scale*1.2));

@@ -79,25 +79,25 @@
   "evidenceTags": [
     {
       "id": "tag-blender",
-      "category": "3D TOOL",
+      "category": "PIPELINE TOOLKIT",
       "name": "Blender 3D",
       "details": "Hard-Surface Modeling, UV Unwrapping, Asset Blockouts"
     },
     {
       "id": "tag-substance",
-      "category": "TEXTURE TOOL",
+      "category": "PIPELINE TOOLKIT",
       "name": "Substance Painter",
       "details": "PBR Texturing, Normal Maps, Custom Alpha Maps"
     },
     {
       "id": "tag-unity",
-      "category": "ENGINE",
+      "category": "PIPELINE TOOLKIT",
       "name": "Unity Engine",
       "details": "Level Design, C# Mechanics, Lighting, Screenshots"
     },
     {
       "id": "tag-unreal",
-      "category": "ENGINE",
+      "category": "PIPELINE TOOLKIT",
       "name": "Unreal Engine 5",
       "details": "Environment Blockouts, Lighting, Virtual Production"
     },
